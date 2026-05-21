@@ -1,0 +1,2317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>상품 썸네일 스마트 리사이저</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: #f5f6f8;
+  color: #1a1a2e;
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ── Header ── */
+.header {
+  background: #fff;
+  border-bottom: 1px solid #e8e9ed;
+  padding: 0 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.header-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.header-title svg { color: #4f6ef7; }
+.smart-badge {
+  background: #4f6ef7;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+
+/* ── Layout ── */
+.layout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  min-height: calc(100vh - 56px);
+}
+
+/* ── Left panel ── */
+.left-panel {
+  background: #fff;
+  border-right: 1px solid #e8e9ed;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.section {
+  padding: 24px 28px;
+  border-bottom: 1px solid #f0f1f4;
+}
+.section:last-child { border-bottom: none; }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.section-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label .icon { font-size: 16px; }
+
+/* Toggle switch */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toggle-label { font-size: 12px; color: #888; }
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: #ddd;
+  border-radius: 24px;
+  transition: 0.2s;
+}
+.toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle input:checked ~ .toggle-track { background: #4f6ef7; }
+.toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
+
+/* Product name */
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 7px;
+  display: block;
+}
+.text-input {
+  width: 100%;
+  background: #f8f9fc;
+  border: 1.5px solid #e8e9ed;
+  border-radius: 8px;
+  color: #1a1a2e;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.text-input:focus { border-color: #4f6ef7; background: #fff; }
+.text-input::placeholder { color: #bbb; }
+
+/* Category tabs */
+.cat-main {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.cat-btn {
+  flex: 1;
+  padding: 9px 0;
+  background: #f8f9fc;
+  border: 1.5px solid #e8e9ed;
+  border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cat-btn:hover { border-color: #4f6ef7; color: #4f6ef7; }
+.cat-btn.active {
+  background: #4f6ef7;
+  border-color: #4f6ef7;
+  color: #fff;
+}
+
+.select-input {
+  width: 100%;
+  background: #f8f9fc;
+  border: 1.5px solid #e8e9ed;
+  border-radius: 8px;
+  color: #1a1a2e;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  padding: 10px 14px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.select-input:focus { border-color: #4f6ef7; background-color: #fff; }
+
+/* Size inputs */
+.size-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.size-field { flex: 1; }
+.size-sep {
+  color: #ccc;
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 14px;
+}
+.num-input-wrap {
+  position: relative;
+}
+.num-input {
+  width: 100%;
+  background: #f8f9fc;
+  border: 1.5px solid #e8e9ed;
+  border-radius: 8px;
+  color: #1a1a2e;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  padding: 10px 38px 10px 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.num-input:focus { border-color: #4f6ef7; background: #fff; }
+.num-input::placeholder { color: #bbb; }
+.num-input.axis-active {
+  border-color: #4f6ef7;
+  background: #eef1ff;
+  font-weight: 600;
+}
+.num-unit {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: #aaa;
+  pointer-events: none;
+}
+
+/* Axis buttons */
+.axis-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+.axis-btn {
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1.5px solid #e8e9ed;
+  background: #f8f9fc;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.axis-btn:hover { border-color: #4f6ef7; }
+.axis-btn.active {
+  border-color: #4f6ef7;
+  background: #4f6ef7;
+}
+.axis-btn-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a2e;
+  display: block;
+  margin-bottom: 3px;
+}
+.axis-btn.active .axis-btn-title { color: #fff; }
+.axis-btn-sub {
+  font-size: 11px;
+  color: #888;
+  display: block;
+}
+.axis-btn.active .axis-btn-sub { color: rgba(255,255,255,0.75); }
+
+/* Info bar */
+.info-bar {
+  background: #f8f9fc;
+  border: 1px solid #e8e9ed;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: #555;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 4px;
+}
+.info-bar strong { color: #4f6ef7; }
+
+/* Canvas size presets */
+.canvas-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.preset-btn {
+  padding: 10px 8px;
+  border-radius: 8px;
+  border: 1.5px solid #e8e9ed;
+  background: #f8f9fc;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+.preset-btn:hover { border-color: #4f6ef7; }
+.preset-btn.active { border-color: #4f6ef7; background: #eef1ff; }
+.preset-name { font-size: 11px; font-weight: 700; color: #555; display: block; }
+.preset-px { font-size: 10px; color: #999; display: block; margin-top: 2px; }
+
+.fill-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+.fill-label { font-size: 12px; color: #555; }
+.fill-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #4f6ef7;
+}
+.fill-slider {
+  width: 100%;
+  margin-top: 8px;
+  accent-color: #4f6ef7;
+}
+
+/* Background color */
+.bg-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.bg-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s;
+}
+.bg-swatch.active { border-color: #4f6ef7; transform: scale(1.1); }
+.bg-swatch.checkerboard {
+  background-image:
+    linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+}
+
+/* Run button */
+.btn-run {
+  width: calc(100% - 56px);
+  margin: 20px 28px;
+  padding: 15px;
+  background: #4f6ef7;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-run:hover { background: #3d5be0; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(79,110,247,0.35); }
+.btn-run:active { transform: translateY(0); }
+.btn-run:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ── Right panel ── */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Upload zone */
+.upload-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px dashed #d5d8e8;
+  border-radius: 16px;
+  margin: 24px;
+  padding: 48px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  background: #fff;
+}
+.upload-zone.has-content { display: none; }
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: #4f6ef7;
+  background: #f5f7ff;
+}
+.upload-zone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.upload-icon-wrap {
+  width: 72px;
+  height: 72px;
+  background: #f0f2ff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 32px;
+}
+.upload-main-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+.upload-sub-text {
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+.upload-hint {
+  background: #f8f9fc;
+  border: 1px solid #e8e9ed;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 12px;
+  color: #555;
+}
+
+/* Result area */
+.result-area {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.result-area.visible { display: flex; }
+
+.result-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e8e9ed;
+  flex-shrink: 0;
+  gap: 12px;
+}
+.result-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.result-stat {
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.result-stat strong { color: #1a1a2e; font-size: 13px; }
+.result-stat .dot {
+  width: 4px; height: 4px;
+  background: #d0d0d8;
+  border-radius: 50%;
+}
+
+.result-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.btn-secondary {
+  padding: 8px 16px;
+  background: #f8f9fc;
+  border: 1.5px solid #e8e9ed;
+  border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #444;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.btn-secondary:hover { border-color: #4f6ef7; color: #4f6ef7; background: #f5f7ff; }
+
+.btn-download {
+  padding: 8px 20px;
+  background: #4f6ef7;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.btn-download:hover { background: #3d5be0; }
+
+/* Result canvas area */
+.result-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+}
+
+.result-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  width: 100%;
+}
+
+.result-card {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.result-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+}
+.result-card-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f0f1f4;
+}
+.result-card-title { font-size: 12px; font-weight: 700; color: #1a1a2e; }
+.result-card-size { font-size: 11px; color: #888; }
+.result-canvas-wrap {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.result-canvas {
+  max-width: 220px;
+  max-height: 280px;
+  border-radius: 4px;
+  display: block;
+  image-rendering: crisp-edges;
+}
+.result-card-footer {
+  padding: 10px 16px;
+  background: #f8f9fc;
+  font-size: 11px;
+  color: #777;
+  display: flex;
+  gap: 12px;
+}
+
+/* Empty result hint */
+.empty-hint {
+  text-align: center;
+  padding: 60px 20px;
+  color: #bbb;
+  font-size: 13px;
+}
+.empty-hint .big { font-size: 48px; margin-bottom: 12px; }
+
+/* Progress overlay */
+.progress-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+.progress-overlay.show { display: flex; }
+.progress-spinner {
+  width: 48px; height: 48px;
+  border: 4px solid #e8e9ed;
+  border-top-color: #4f6ef7;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.progress-text { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+.progress-sub { font-size: 12px; color: #888; }
+
+/* File list */
+.file-list {
+  padding: 0 28px 16px;
+}
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8f9fc;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #444;
+}
+.file-item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item-size { color: #888; flex-shrink: 0; }
+.file-remove {
+  flex-shrink: 0;
+  width: 18px; height: 18px;
+  background: #e8e9ed;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  color: #666;
+  transition: background 0.15s;
+}
+.file-remove:hover { background: #ff5533; color: #fff; }
+
+/* Multi-file add btn */
+.add-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  border: 1.5px dashed #d0d0d8;
+  border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 4px;
+  position: relative;
+}
+.add-more-btn input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+}
+.add-more-btn:hover { border-color: #4f6ef7; color: #4f6ef7; background: #f5f7ff; }
+
+/* ── Settings Panel (slide-over) ── */
+.settings-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 300;
+  backdrop-filter: blur(2px);
+}
+.settings-overlay.open { display: block; }
+
+.settings-panel {
+  position: fixed;
+  top: 0; right: 0;
+  width: 680px;
+  max-width: 100vw;
+  height: 100vh;
+  background: #fff;
+  z-index: 301;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: -8px 0 40px rgba(0,0,0,0.15);
+}
+.settings-panel.open { transform: translateX(0); }
+
+.settings-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px;
+  border-bottom: 1px solid #e8e9ed;
+  flex-shrink: 0;
+}
+.settings-panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.settings-panel-subtitle {
+  font-size: 11px;
+  background: #f0ebff;
+  color: #7c3aed;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.settings-panel-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.btn-close {
+  width: 32px; height: 32px;
+  background: #f8f9fc;
+  border: 1px solid #e8e9ed;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  color: #555;
+}
+.btn-close:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+
+.settings-desc {
+  padding: 14px 28px;
+  background: #fafbff;
+  border-bottom: 1px solid #e8e9ed;
+  font-size: 12px;
+  color: #555;
+  line-height: 1.7;
+  flex-shrink: 0;
+}
+.settings-desc strong { color: #7c3aed; }
+
+.settings-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 28px;
+}
+
+/* Category group in settings */
+.settings-cat-group {
+  margin-bottom: 28px;
+}
+.settings-cat-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e8e9ed;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-cat-title span { font-size: 15px; }
+
+/* Sub-category row */
+.subcat-row {
+  display: grid;
+  grid-template-columns: 110px 100px 1fr 28px;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  transition: background 0.1s;
+}
+.subcat-row:hover { background: #f8f9fc; }
+.subcat-row.header-row {
+  font-size: 10px;
+  font-weight: 700;
+  color: #aaa;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+  background: none !important;
+}
+.subcat-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+/* Axis toggle pill */
+.axis-pill {
+  display: flex;
+  background: #f0f1f4;
+  border-radius: 6px;
+  padding: 2px;
+  width: fit-content;
+  gap: 0;
+}
+.axis-pill-btn {
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.axis-pill-btn.active {
+  background: #7c3aed;
+  color: #fff;
+}
+
+/* Reference value input */
+.ref-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ref-input {
+  width: 80px;
+  background: #f8f9fc;
+  border: 1.5px solid #e8e9ed;
+  border-radius: 7px;
+  color: #1a1a2e;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+  text-align: right;
+}
+.ref-input:focus { border-color: #7c3aed; background: #fff; }
+
+/* Effective fill display */
+.eff-fill {
+  font-size: 12px;
+  color: #7c3aed;
+  font-weight: 700;
+  text-align: right;
+}
+.eff-formula {
+  font-size: 10px;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+/* Settings footer */
+.settings-footer {
+  padding: 16px 28px;
+  border-top: 1px solid #e8e9ed;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+  background: #fafbff;
+}
+.btn-reset-defaults {
+  padding: 9px 18px;
+  background: #f8f9fc;
+  border: 1.5px solid #e8e9ed;
+  border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-reset-defaults:hover { border-color: #f59e0b; color: #d97706; }
+
+.btn-export-json {
+  padding: 9px 18px;
+  background: #f8f9fc;
+  border: 1.5px solid #e8e9ed;
+  border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-export-json:hover { border-color: #4f6ef7; color: #4f6ef7; }
+
+.btn-import-json {
+  padding: 9px 18px;
+  background: #f8f9fc;
+  border: 1.5px solid #e8e9ed;
+  border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+.btn-import-json:hover { border-color: #4f6ef7; color: #4f6ef7; }
+.btn-import-json input {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%;
+}
+
+.btn-apply-settings {
+  margin-left: auto;
+  padding: 9px 24px;
+  background: #7c3aed;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-apply-settings:hover { background: #6d28d9; }
+
+/* Header settings btn */
+.btn-settings-open {
+  margin-left: auto;
+  padding: 7px 16px;
+  background: #f0ebff;
+  border: 1.5px solid #c4b5fd;
+  border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7c3aed;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-settings-open:hover { background: #ede9fe; }
+
+/* Add subcat row */
+.add-subcat-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 8px 12px;
+}
+.add-subcat-input {
+  flex: 1;
+  background: #f8f9fc;
+  border: 1.5px dashed #c4b5fd;
+  border-radius: 7px;
+  color: #1a1a2e;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  padding: 7px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.add-subcat-input:focus { border-color: #7c3aed; background: #fff; }
+.add-subcat-input::placeholder { color: #bbb; }
+.btn-add-subcat {
+  padding: 7px 14px;
+  background: #ede9fe;
+  border: 1.5px solid #c4b5fd;
+  border-radius: 7px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7c3aed;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.btn-add-subcat:hover { background: #ddd6fe; }
+.btn-del-subcat {
+  width: 26px; height: 26px;
+  background: #f8f9fc;
+  border: 1px solid #e8e9ed;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #999;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.btn-del-subcat:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+
+/* Unit badge (read-only, no toggle) */
+.unit-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f0f1f4;
+  color: #666;
+  flex-shrink: 0;
+}
+.unit-badge.is-inch {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
+
+/* Card scale adjustment controls */
+.card-scale-ctrl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid #f0f1f4;
+  background: #fafbff;
+}
+.scale-btn {
+  width: 28px; height: 28px;
+  border: 1.5px solid #e8e9ed;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  color: #444;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.scale-btn:hover { border-color: #4f6ef7; color: #4f6ef7; background: #f0f4ff; }
+.scale-btn:active { transform: scale(0.92); }
+.scale-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4f6ef7;
+  min-width: 44px;
+  text-align: center;
+}
+.scale-reset {
+  font-size: 10px;
+  color: #aaa;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #e8e9ed;
+  background: #fff;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.scale-reset:hover { color: #f59e0b; border-color: #fcd34d; }
+
+/* ── Card adjustment controls ── */
+.card-adj-ctrl {
+  padding: 10px 14px;
+  border-top: 1px solid #f0f1f4;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.adj-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.adj-row-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #aaa;
+  letter-spacing: 0.5px;
+  width: 28px;
+  flex-shrink: 0;
+}
+.adj-btn {
+  width: 26px;
+  height: 26px;
+  background: #f8f9fc;
+  border: 1.5px solid #e8e9ed;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #444;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.adj-btn:hover { border-color: #4f6ef7; color: #4f6ef7; background: #f0f2ff; }
+.adj-btn:active { transform: scale(0.92); }
+.adj-track {
+  flex: 1;
+  height: 4px;
+  background: #e8e9ed;
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+}
+.adj-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #4f6ef7;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(79,110,247,0.4);
+  transition: left 0.1s;
+}
+.adj-value {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4f6ef7;
+  min-width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.adj-reset-row {
+  display: flex;
+  justify-content: flex-end;
+}
+.adj-reset-btn {
+  font-size: 11px;
+  color: #aaa;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-family: 'Noto Sans KR', sans-serif;
+  transition: color 0.12s;
+}
+.adj-reset-btn:hover { color: #ff5533; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d0d0d8; border-radius: 3px; }
+
+/* Responsive tweak for toolbar */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .left-panel { max-height: 50vh; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-title">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    상품 썸네일 자동 리사이저
+  </div>
+  <span class="smart-badge" id="smartBadge">스마트 리사이징 ON</span>
+  <button class="btn-settings-open" onclick="openSettings()">
+    ⚙ 카테고리 기준치 설정
+  </button>
+</header>
+
+<!-- Progress overlay -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-spinner"></div>
+  <div class="progress-text">이미지 처리 중...</div>
+  <div class="progress-sub" id="progressSub">리사이징 계산 중</div>
+</div>
+
+<div class="layout">
+  <!-- ── LEFT PANEL ── -->
+  <div class="left-panel">
+
+    <!-- 상품 설정 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-label">
+          <span class="icon">⚙️</span> 상품 설정
+        </div>
+        <label class="toggle" title="스마트 리사이징">
+          <input type="checkbox" id="smartToggle" checked>
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+
+      <!-- 상품명 -->
+      <div style="margin-bottom:16px">
+        <span class="field-label">상품명 (선택)</span>
+        <input type="text" class="text-input" id="productName" placeholder="예: DD-10001-BK">
+      </div>
+
+      <!-- 대분류 -->
+      <div style="margin-bottom:12px">
+        <span class="field-label">대분류</span>
+        <div class="cat-main" id="catMain">
+          <button class="cat-btn active" data-cat="가방" onclick="selectCategory(this)">가방</button>
+          <button class="cat-btn" data-cat="ACC" onclick="selectCategory(this)">ACC</button>
+          <button class="cat-btn" data-cat="의류" onclick="selectCategory(this)">의류</button>
+        </div>
+      </div>
+
+      <!-- 소분류 -->
+      <div>
+        <span class="field-label">소분류</span>
+        <select class="select-input" id="subCat" onchange="onSubCatChange()">
+        </select>
+      </div>
+    </div>
+
+    <!-- 실제 상품 사이즈 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-label">실제 상품 사이즈</div>
+      </div>
+      <div style="font-size:11px;color:#888;margin-bottom:14px;">
+        <span id="sizeUnitDesc">cm 단위</span> · 기준축 치수로 채움 비율 자동 계산 · 파일명에 포함
+      </div>
+
+      <div class="size-row" style="margin-bottom:16px;">
+        <div class="size-field">
+          <span class="field-label">가로 W</span>
+          <div class="num-input-wrap">
+            <input type="number" class="num-input" id="sizeW" placeholder="예) 32" step="0.1" oninput="onSizeChange()">
+            <span class="num-unit" id="unitW">cm</span>
+          </div>
+        </div>
+        <div class="size-sep">×</div>
+        <div class="size-field">
+          <span class="field-label">세로 H ← 기준</span>
+          <div class="num-input-wrap">
+            <input type="number" class="num-input axis-active" id="sizeH" placeholder="예) 40" step="0.1" oninput="onSizeChange()">
+            <span class="num-unit" id="unitH">cm</span>
+          </div>
+        </div>
+        <div class="size-sep">×</div>
+        <div class="size-field">
+          <span class="field-label">폭 D</span>
+          <div class="num-input-wrap">
+            <input type="number" class="num-input" id="sizeD" placeholder="예) 14" step="0.1" oninput="onSizeChange()">
+            <span class="num-unit" id="unitD">cm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 기준축 -->
+      <span class="field-label">기준축 (카테고리별 기본값 자동 적용 · 직접 변경 가능)</span>
+      <div class="axis-row" id="axisRow">
+        <button class="axis-btn active" data-axis="H" onclick="selectAxis(this)">
+          <span class="axis-btn-title">세로 기준</span>
+          <span class="axis-btn-sub">H(세로) 기준 스케일</span>
+        </button>
+        <button class="axis-btn" data-axis="W" onclick="selectAxis(this)">
+          <span class="axis-btn-title">가로 기준</span>
+          <span class="axis-btn-sub">W(가로) 기준 스케일</span>
+        </button>
+      </div>
+
+      <!-- Info bar -->
+      <div class="info-bar" id="infoBar" style="margin-top:12px;">
+        <span>카테고리: <strong id="infocat">가방 / 백팩</strong></span>
+        <span>기준축: <strong id="infoaxis">세로 H</strong></span>
+        <span>캔버스 채움: <strong id="infofill">80%</strong></span>
+        <span id="infosize"></span>
+      </div>
+    </div>
+
+    <!-- 출력 캔버스 설정 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-label">출력 캔버스 설정</div>
+      </div>
+
+      <span class="field-label">캔버스 크기 프리셋</span>
+      <div class="canvas-presets" id="canvasPresets" style="grid-template-columns: 1fr 1fr;">
+        <button class="preset-btn active" data-w="800" data-h="1000" onclick="selectPreset(this)">
+          <span class="preset-name">세로형</span>
+          <span class="preset-px">800 × 1000</span>
+        </button>
+        <button class="preset-btn" data-w="1000" data-h="1000" onclick="selectPreset(this)">
+          <span class="preset-name">정방형</span>
+          <span class="preset-px">1000 × 1000</span>
+        </button>
+      </div>
+
+      <!-- Fill ratio -->
+      <div class="fill-row" style="margin-top:16px;">
+        <span class="fill-label">캔버스 채움 비율</span>
+        <span class="fill-value" id="fillDisplay">80%</span>
+      </div>
+      <input type="range" class="fill-slider" id="fillSlider" min="40" max="95" value="80" oninput="onFillChange()">
+
+      <!-- Background -->
+      <div style="margin-top:16px;">
+        <span class="field-label">배경색</span>
+        <div class="bg-options">
+          <div class="bg-swatch active" style="background:#ffffff;" data-bg="#ffffff" onclick="selectBg(this)" title="흰색"></div>
+          <div class="bg-swatch" style="background:#f5f5f3;" data-bg="#f5f5f3" onclick="selectBg(this)" title="오프화이트"></div>
+          <div class="bg-swatch" style="background:#1a1a1a;" data-bg="#1a1a1a" onclick="selectBg(this)" title="블랙"></div>
+          <div class="bg-swatch" style="background:#f0ede8;" data-bg="#f0ede8" onclick="selectBg(this)" title="크림"></div>
+          <div class="bg-swatch" style="background:#dce8f0;" data-bg="#dce8f0" onclick="selectBg(this)" title="하늘"></div>
+          <div class="bg-swatch checkerboard" data-bg="transparent" onclick="selectBg(this)" title="투명"></div>
+        </div>
+      </div>
+
+      <!-- Format -->
+      <div style="margin-top:14px; display:flex; gap:16px; align-items:center;">
+        <div>
+          <span class="field-label">저장 형식</span>
+          <select class="select-input" id="formatSelect" style="width:auto;">
+            <option value="jpeg" selected>JPG</option>
+            <option value="png">PNG</option>
+            <option value="webp">WEBP</option>
+          </select>
+        </div>
+        <div>
+          <span class="field-label">품질 (포토샵 웹용 기준)</span>
+          <select class="select-input" id="qualitySelect" style="width:auto;">
+            <option value="0.95">최고 (PS 100)</option>
+            <option value="0.85" selected>고 90 (권장)</option>
+            <option value="0.72">중 72</option>
+            <option value="0.6">저 60</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 업로드 파일 목록 -->
+    <div class="section" id="fileListSection" style="display:none;">
+      <div class="section-header">
+        <div class="section-label">📁 업로드된 이미지</div>
+        <span id="fileCount" style="font-size:12px;color:#888;"></span>
+      </div>
+      <div class="file-list" id="fileListEl" style="padding:0;"></div>
+      <label class="add-more-btn">
+        <input type="file" accept="image/*" multiple onchange="addMoreFiles(this)">
+        + 이미지 추가
+      </label>
+    </div>
+
+    <!-- Run button -->
+    <button class="btn-run" id="btnRun" onclick="runResize()" disabled>
+      ✨ 리사이징 실행
+    </button>
+
+  </div><!-- /left-panel -->
+
+  <!-- ── RIGHT PANEL ── -->
+  <div class="right-panel">
+
+    <!-- Upload zone -->
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
+      <div class="upload-icon-wrap">📤</div>
+      <div class="upload-main-text">이미지를 드래그하거나 클릭하여 업로드</div>
+      <div class="upload-sub-text">
+        JPG, PNG, WEBP 등 · 여러 파일 동시 업로드 가능
+      </div>
+      <div class="upload-hint" id="uploadHint">
+        가방 / 백팩 &nbsp;·&nbsp; 채움 80% &nbsp;·&nbsp; 세로 기준 &nbsp;·&nbsp; 800×1000px
+      </div>
+    </div>
+
+    <!-- Result area -->
+    <div class="result-area" id="resultArea">
+      <div class="result-toolbar">
+        <div class="result-info">
+          <div class="result-stat">출력 <strong id="outFiles">0</strong>개</div>
+          <div class="result-stat"><div class="dot"></div></div>
+          <div class="result-stat">캔버스 <strong id="outCanvas">800×1000</strong></div>
+          <div class="result-stat"><div class="dot"></div></div>
+          <div class="result-stat">채움 <strong id="outFill">80%</strong></div>
+        </div>
+        <div class="result-actions">
+          <button class="btn-secondary" onclick="resetAll()">↺ 초기화</button>
+          <button class="btn-secondary" onclick="runResize()">⟳ 재처리</button>
+          <button class="btn-download" id="btnDownload" onclick="downloadAll()">⬇ 전체 다운로드</button>
+        </div>
+      </div>
+      <div class="result-scroll" id="resultScroll">
+        <div class="empty-hint">
+          <div class="big">🖼</div>
+          이미지를 업로드하고 리사이징을 실행하면 결과가 표시됩니다
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /right-panel -->
+</div>
+
+<!-- ── SETTINGS PANEL ── -->
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-panel-header">
+    <div class="settings-panel-title">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      카테고리 기준치 설정
+      <span class="settings-panel-subtitle">소분류별 기준축 · 기준치(mm) 직접 편집</span>
+    </div>
+    <div class="settings-panel-actions">
+      <button class="btn-close" onclick="closeSettings()">✕</button>
+    </div>
+  </div>
+  <div class="settings-desc">
+    <strong>기준치</strong>는 채움 80%를 기준으로 잡은 대표 상품 치수입니다.<br>
+    치수 입력 시: 채움% = 80 + (상품치수 − 기준치) &nbsp;·&nbsp; 10cm 차이 = ±10% 변동<br>
+    예) 백팩 기준치 50cm, 상품 H=40cm → 채움 70% &nbsp;·&nbsp; 상품 H=60cm → 채움 90%
+  </div>
+  <div class="settings-body" id="settingsBody">
+    <!-- Rendered by JS -->
+  </div>
+  <div class="settings-footer">
+    <button class="btn-reset-defaults" onclick="resetToDefaults()">↺ 기본값 초기화</button>
+    <button class="btn-export-json" onclick="exportJSON()">⬇ JSON 내보내기</button>
+    <label class="btn-import-json">
+      <input type="file" accept=".json" onchange="importJSON(this)">
+      ⬆ JSON 불러오기
+    </label>
+    <button class="btn-apply-settings" onclick="applyAndClose()">적용하고 닫기</button>
+  </div>
+</div>
+
+<!-- Hidden canvas for processing -->
+<canvas id="workCanvas" style="display:none;"></canvas>
+
+<script>
+// ── State ──
+const state = {
+  category: '가방',
+  subCategory: '백팩',
+  axis: 'H',
+  sizeW: null, sizeH: null, sizeD: null,
+  canvasW: 800, canvasH: 1000,
+  fill: 80,
+  bgColor: '#ffffff',
+  format: 'jpeg',
+  quality: 0.85,
+  smart: true,
+  files: [],   // { file, name, url, img }
+  results: []  // { canvas, filename }
+};
+
+// ── Category reference data (기준치 설정) ──
+// bodyRatio: 이미지 전체(스트랩/손잡이 포함) 중 몸체가 차지하는 비율
+//   예: 숄더백 H기준 → 이미지 세로 중 몸체가 70% → bodyRatio: 0.70
+//   몸체 기준으로 스케일 계산 후, 전체 이미지를 그 비율로 배치
+const DEFAULT_CAT_CONFIG = {
+  '가방': {
+    '백팩':        { axis: 'H', refVal: 50,  unit: 'cm' },
+    '토트백':      { axis: 'W', refVal: 50,  unit: 'cm' },
+    '숄더백':      { axis: 'W', refVal: 50,  unit: 'cm' },
+    '크로스백':    { axis: 'W', refVal: 50,  unit: 'cm' },
+    '슬링백':      { axis: 'H', refVal: 60,  unit: 'cm' },
+    '러기지':      { axis: 'H', refVal: 30,  unit: 'in' },
+    '웨이스트백':  { axis: 'W', refVal: 30,  unit: 'cm' },
+    '브리프케이스':{ axis: 'W', refVal: 50,  unit: 'cm' },
+    '보스턴백':    { axis: 'W', refVal: 50,  unit: 'cm' },
+    '캐디백':      { axis: 'W', refVal: 110, unit: 'cm' },
+  },
+  'ACC': {
+    '키링':   { axis: 'W', refVal: 12.5, unit: 'cm' },
+    '우산':   { axis: 'H', refVal: 40,   unit: 'cm' },
+    '파우치': { axis: 'W', refVal: 30,   unit: 'cm' },
+    '컵':     { axis: 'H', refVal: 18.8, unit: 'cm' },
+  },
+  '의류': {
+    '상의': { axis: 'W', refVal: 75,  unit: 'cm' },
+    '하의': { axis: 'H', refVal: 110, unit: 'cm' },
+    '모자': { axis: 'H', refVal: 35,  unit: 'cm' },
+  }
+};
+
+// Working copy (user-editable)
+let catConfig = JSON.parse(JSON.stringify(DEFAULT_CAT_CONFIG));
+
+const SUB_CATS = {
+  '가방': ['백팩','토트백','숄더백','크로스백','슬링백','러기지','웨이스트백','브리프케이스','보스턴백','캐디백'],
+  'ACC':  ['키링','우산','파우치','컵'],
+  '의류': ['상의','하의','모자'],
+};
+
+// Fill% = 80 fixed; effective fill per image = (productDim / refVal) * 100
+const FILL_DEFAULT = 80;
+
+// ── Unit helpers ──
+function getCurrentUnit() {
+  const cfg = (catConfig[state.category] || {})[state.subCategory];
+  return cfg ? cfg.unit : 'cm';
+}
+
+function updateUnitLabels() {
+  const unit = getCurrentUnit();
+  ['unitW','unitH','unitD'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = unit;
+  });
+  const descEl = document.getElementById('sizeUnitDesc');
+  if (descEl) {
+    descEl.textContent = unit === 'in' ? 'inch 단위 (러기지)' : 'cm 단위';
+    descEl.style.color = unit === 'in' ? '#f59e0b' : '#888';
+  }
+  // Update placeholders
+  const isIn = unit === 'in';
+  document.getElementById('sizeW').placeholder = isIn ? '예) 26' : '예) 32';
+  document.getElementById('sizeH').placeholder = isIn ? '예) 30' : '예) 40';
+  document.getElementById('sizeD').placeholder = isIn ? '예) 14' : '예) 14';
+}
+
+// ── Init ──
+function init() {
+  // 초기 소분류 셀렉트 채우기
+  populateSubCat('가방');
+  setupDragDrop();
+  updateUnitLabels();
+  updateInfoBar();
+  updateUploadHint();
+}
+
+function populateSubCat(cat) {
+  const subEl = document.getElementById('subCat');
+  subEl.innerHTML = '';
+  SUB_CATS[cat].forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    subEl.appendChild(o);
+  });
+  state.subCategory = SUB_CATS[cat][0];
+}
+
+// ── Category ──
+function selectCategory(btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.category = btn.dataset.cat;
+  populateSubCat(state.category);
+  applyDefaults();
+}
+
+function onSubCatChange() {
+  state.subCategory = document.getElementById('subCat').value;
+  applyDefaults();
+}
+
+function applyDefaults() {
+  const cfg = (catConfig[state.category] || {})[state.subCategory];
+  if (cfg && state.smart) {
+    state.axis = cfg.axis;
+
+    const productDim = state.axis === 'H' ? state.sizeH : state.sizeW;
+    if (productDim && cfg.refVal) {
+      // 기준치 대비 차이(cm) → 10cm당 스케일 10% 변동
+      // scale% = 100 + (상품치수 - 기준치) / 10 * 10
+      //        = 100 + (상품치수 - 기준치)  [cm 단위, 1cm = 1%]
+      const unit = cfg.unit || 'cm';
+      const dimNorm  = unit === 'in' ? productDim * 2.54 : productDim;
+      const refNorm  = unit === 'in' ? cfg.refVal  * 2.54 : cfg.refVal;
+      const scalePct = 100 + (dimNorm - refNorm) * 1.2; // 10cm = 12% 선형
+      state.fill = Math.round(FILL_DEFAULT * scalePct / 100);
+      state.fill = Math.max(20, Math.min(95, state.fill));
+    } else {
+      state.fill = FILL_DEFAULT;
+    }
+
+    document.getElementById('fillSlider').value = state.fill;
+    document.getElementById('fillDisplay').textContent = state.fill + '%';
+    document.querySelectorAll('.axis-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.axis === cfg.axis);
+    });
+    updateAxisLabel();
+  }
+  updateUnitLabels();
+  updateInfoBar();
+  updateUploadHint();
+}
+
+// ── Axis ──
+function selectAxis(btn) {
+  document.querySelectorAll('.axis-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.axis = btn.dataset.axis;
+  updateAxisLabel();
+  updateInfoBar();
+}
+
+function updateAxisLabel() {
+  const wLabel = document.querySelector('#sizeW').closest('.size-field').querySelector('.field-label');
+  const hLabel = document.querySelector('#sizeH').closest('.size-field').querySelector('.field-label');
+  wLabel.textContent = state.axis === 'W' ? '가로 W ← 기준' : '가로 W';
+  hLabel.textContent = state.axis === 'H' ? '세로 H ← 기준' : '세로 H';
+  document.getElementById('sizeW').classList.toggle('axis-active', state.axis === 'W');
+  document.getElementById('sizeH').classList.toggle('axis-active', state.axis === 'H');
+}
+
+// ── Size inputs ──
+function onSizeChange() {
+  state.sizeW = parseFloat(document.getElementById('sizeW').value) || null;
+  state.sizeH = parseFloat(document.getElementById('sizeH').value) || null;
+  state.sizeD = parseFloat(document.getElementById('sizeD').value) || null;
+  applyDefaults(); // 치수 변경 시 채움% 실시간 재계산
+}
+
+// ── Fill ──
+function onFillChange() {
+  state.fill = parseInt(document.getElementById('fillSlider').value);
+  document.getElementById('fillDisplay').textContent = state.fill + '%';
+  updateInfoBar();
+}
+
+// ── Canvas preset ──
+function selectPreset(btn) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.canvasW = parseInt(btn.dataset.w);
+  state.canvasH = parseInt(btn.dataset.h);
+  updateInfoBar();
+  updateUploadHint();
+}
+
+// ── Background ──
+function selectBg(el) {
+  document.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  state.bgColor = el.dataset.bg;
+}
+
+// ── Smart toggle ──
+document.getElementById('smartToggle').addEventListener('change', function() {
+  state.smart = this.checked;
+  document.getElementById('smartBadge').textContent = state.smart ? '스마트 리사이징 ON' : '스마트 리사이징 OFF';
+  if (state.smart) applyDefaults();
+});
+
+// ── Info bar ──
+function updateInfoBar() {
+  document.getElementById('infocat').textContent = `${state.category} / ${state.subCategory}`;
+  document.getElementById('infoaxis').textContent = state.axis === 'H' ? '세로 H' : '가로 W';
+  document.getElementById('infofill').textContent = state.fill + '%';
+
+  let sizeStr = '';
+  if (state.sizeW || state.sizeH) {
+    const unit = getCurrentUnit();
+    const parts = [];
+    if (state.sizeW) parts.push(`W${state.sizeW}`);
+    if (state.sizeH) parts.push(`H${state.sizeH}`);
+    if (state.sizeD) parts.push(`D${state.sizeD}`);
+    sizeStr = parts.join('×') + unit;
+  }
+  document.getElementById('infosize').textContent = sizeStr;
+
+  // Result stats
+  document.getElementById('outCanvas').textContent = `${state.canvasW}×${state.canvasH}`;
+  document.getElementById('outFill').textContent = state.fill + '%';
+}
+
+function updateUploadHint() {
+  document.getElementById('uploadHint').textContent =
+    `${state.category} / ${state.subCategory} · 채움 ${state.fill}% · ${state.axis === 'H' ? '세로' : '가로'} 기준 · ${state.canvasW}×${state.canvasH}px`;
+}
+
+// ── File handling ──
+function handleFiles(files) {
+  Array.from(files).forEach(f => {
+    if (!f.type.startsWith('image/')) return;
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => {
+      state.files.push({ file: f, name: f.name, url, img });
+      renderFileList();
+      showRunBtn();
+    };
+    img.src = url;
+  });
+}
+
+function addMoreFiles(input) {
+  handleFiles(input.files);
+  input.value = '';
+}
+
+function removeFile(idx) {
+  URL.revokeObjectURL(state.files[idx].url);
+  state.files.splice(idx, 1);
+  renderFileList();
+  if (state.files.length === 0) {
+    document.getElementById('fileListSection').style.display = 'none';
+    document.getElementById('btnRun').disabled = true;
+  }
+}
+
+function renderFileList() {
+  const el = document.getElementById('fileListEl');
+  el.innerHTML = '';
+  state.files.forEach((f, i) => {
+    const size = (f.file.size / 1024).toFixed(0);
+    el.innerHTML += `
+      <div class="file-item">
+        <span style="font-size:16px;">🖼</span>
+        <span class="file-item-name">${f.name}</span>
+        <span class="file-item-size">${size}KB</span>
+        <button class="file-remove" onclick="removeFile(${i})">✕</button>
+      </div>`;
+  });
+  document.getElementById('fileCount').textContent = `${state.files.length}개`;
+  document.getElementById('fileListSection').style.display = state.files.length ? 'block' : 'none';
+}
+
+function showRunBtn() {
+  document.getElementById('btnRun').disabled = false;
+  // Show result area placeholder
+  document.getElementById('uploadZone').classList.add('has-content');
+  document.getElementById('resultArea').classList.add('visible');
+}
+
+// ── Drag & drop ──
+function setupDragDrop() {
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', e => { e.stopPropagation(); zone.classList.remove('drag-over'); });
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    zone.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+  });
+  // 전체 페이지 드래그오버만 막기 (drop은 zone에서만 처리)
+  document.body.addEventListener('dragover', e => e.preventDefault());
+}
+
+// ── Core: Smart resize ──
+//
+// sharedScale 있을 때 (치수 입력):
+//   - 모든 이미지에 동일한 sharedScale 적용 → 몸체 크기 통일
+//   - 단, 이미지 전체(스트랩 포함)가 캔버스 80% 초과 시 → 그 이미지만 클램프
+//   - 결과: 스트랩 없는 이미지는 동일 크기, 스트랩 긴 이미지는 살짝 작게
+//
+// sharedScale 없을 때 (치수 미입력):
+//   - 이미지 전체 기준 80% 채움
+//
+// 위치: 하단 70px 위 (800×1000 기준), 가로 중앙
+function smartResize(img, canvasW, canvasH, bgColor, sharedScale, offsetY = 0) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvasW;
+  canvas.height = canvasH;
+  const ctx = canvas.getContext('2d');
+
+  if (bgColor === 'transparent') {
+    ctx.clearRect(0, 0, canvasW, canvasH);
+  } else {
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvasW, canvasH);
+  }
+
+  const MAX_FILL = 0.80;
+  const maxScaleW = (canvasW * MAX_FILL) / img.width;
+  const maxScaleH = (canvasH * MAX_FILL) / img.height;
+  const maxScale  = Math.min(maxScaleW, maxScaleH);
+
+  let scale;
+  if (sharedScale != null) {
+    scale = Math.min(sharedScale, maxScale);
+  } else {
+    scale = maxScale;
+  }
+
+  const drawW = img.width  * scale;
+  const drawH = img.height * scale;
+
+  const bottomOffset = 70 * (canvasH / 1000);
+  const x = (canvasW - drawW) / 2;
+  // offsetY: 양수 = 위로, 음수 = 아래로 (px, 캔버스 기준)
+  const y = canvasH - bottomOffset - drawH - offsetY;
+
+  ctx.drawImage(img, x, y, drawW, drawH);
+  return canvas;
+}
+
+// ── Build filename ──
+function buildFilename(original, idx) {
+  const base = original.replace(/\.[^.]+$/, '');
+  const productName = document.getElementById('productName').value.trim() || base;
+  const num = String(idx + 1).padStart(2, '0');
+  const ext = state.format === 'jpeg' ? 'jpg' : state.format;
+  return `${productName}_${num}.${ext}`;
+}
+
+// ── Run resize ──
+async function runResize() {
+  if (state.files.length === 0) return;
+
+  const format = document.getElementById('formatSelect').value;
+  const quality = parseFloat(document.getElementById('qualitySelect').value);
+  state.format = format;
+  state.quality = quality;
+
+  const overlay = document.getElementById('progressOverlay');
+  overlay.classList.add('show');
+  const prevResults = [...state.results]; // 재처리 시 scaleAdj 유지용
+  state.results = [];
+
+  const cfg        = (catConfig[state.category] || {})[state.subCategory];
+  const axis       = state.axis;
+  const productDim = axis === 'H' ? state.sizeH : state.sizeW;
+
+  let sharedScale = null;
+
+  if (productDim && cfg && cfg.refVal) {
+    // 치수 입력 시에만 sharedScale 계산
+    const fill         = state.fill / 100;
+    const canvasAxisPx = axis === 'H' ? state.canvasH : state.canvasW;
+    const targetBodyPx = canvasAxisPx * fill;
+
+    // 기준축 픽셀 중간값으로 공통 스케일 산출
+    const axisPixels = state.files.map(f => axis === 'H' ? f.img.height : f.img.width);
+    const sorted     = [...axisPixels].sort((a, b) => a - b);
+    const medianPx   = sorted[Math.floor(sorted.length / 2)];
+    sharedScale      = targetBodyPx / medianPx;
+  }
+  // productDim 없으면 sharedScale = null → smartResize에서 이미지 전체 80% 적용
+
+  for (let i = 0; i < state.files.length; i++) {
+    document.getElementById('progressSub').textContent =
+      `${i + 1} / ${state.files.length} 처리 중...`;
+    await new Promise(r => setTimeout(r, 30));
+
+    const { img }    = state.files[i];
+    const baseScale  = sharedScale;
+    const scaleAdj = prevResults[i]?.scaleAdj ?? 1;
+    const offsetY  = prevResults[i]?.offsetY  ?? 0;
+    const resultCanvas = smartResize(
+      img, state.canvasW, state.canvasH,
+      state.bgColor,
+      baseScale != null ? baseScale * scaleAdj : null,
+      offsetY
+    );
+    const filename = buildFilename(state.files[i].name, i);
+    state.results.push({ canvas: resultCanvas, filename, baseScale, scaleAdj, offsetY });
+  }
+
+  overlay.classList.remove('show');
+  renderResults();
+}
+
+// ── Render results ──
+function renderResults() {
+  const scroll = document.getElementById('resultScroll');
+  scroll.innerHTML = '';
+  document.getElementById('outFiles').textContent = state.results.length;
+
+  const cards = document.createElement('div');
+  cards.className = 'result-cards';
+
+  state.results.forEach((r, i) => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.id = `card_${i}`;
+    cards.appendChild(card);
+  });
+
+  // DOM에 먼저 추가한 뒤 renderCard 호출
+  scroll.appendChild(cards);
+
+  state.results.forEach((r, i) => {
+    renderCard(i);
+  });
+
+  document.getElementById('resultArea').classList.add('visible');
+  document.getElementById('uploadZone').classList.add('has-content');
+}
+
+function renderCard(i) {
+  const r = state.results[i];
+  if (!r) return;
+  const card = document.getElementById(`card_${i}`);
+  if (!card) return;
+
+  const { canvas, filename, scaleAdj, offsetY } = r;
+  const src     = canvas.toDataURL(`image/${state.format}`, state.quality);
+  const bgStyle = state.bgColor === 'transparent'
+    ? 'repeating-conic-gradient(#e0e0e0 0% 25%, white 0% 50%) 0 0/16px 16px'
+    : state.bgColor;
+
+  // 스케일: 0.5~2.0, 중앙=1.0
+  const scaleMin = 0.5, scaleMax = 2.0;
+  const scalePct = ((scaleAdj - scaleMin) / (scaleMax - scaleMin) * 100).toFixed(1);
+  const scaleLabel = scaleAdj === 1
+    ? '기본'
+    : (scaleAdj > 1 ? `+${Math.round((scaleAdj-1)*100)}%` : `${Math.round((scaleAdj-1)*100)}%`);
+
+  // 위치: -200~+200px, 중앙=0
+  const offMin = -200, offMax = 200;
+  const offPct = ((offsetY - offMin) / (offMax - offMin) * 100).toFixed(1);
+  const offLabel = offsetY === 0 ? '기본' : (offsetY > 0 ? `위 +${offsetY}px` : `아래 ${Math.abs(offsetY)}px`);
+
+  card.innerHTML = `
+    <div class="result-card-header">
+      <span class="result-card-title">${filename}</span>
+      <span class="result-card-size">${canvas.width}×${canvas.height}</span>
+    </div>
+    <div class="result-canvas-wrap" style="background:${bgStyle}; border-radius:0; padding:12px;">
+      <img src="${src}" style="max-width:200px;max-height:260px;display:block;border-radius:3px;margin:auto;" alt="${filename}">
+    </div>
+
+    <div class="card-adj-ctrl">
+
+      <!-- 스케일 -->
+      <div class="adj-row">
+        <span class="adj-row-label">크기</span>
+        <button class="adj-btn" data-action="scale" data-idx="${i}" data-delta="-0.10">−</button>
+        <input type="range" class="adj-range-scale" data-idx="${i}"
+          min="${scaleMin}" max="${scaleMax}" step="0.01" value="${scaleAdj}"
+          style="flex:1;accent-color:#4f6ef7;height:4px;">
+        <button class="adj-btn" data-action="scale" data-idx="${i}" data-delta="0.10">+</button>
+        <span class="adj-value" id="scaleVal_${i}">${scaleLabel}</span>
+      </div>
+
+      <!-- Y 위치 -->
+      <div class="adj-row">
+        <span class="adj-row-label">위치</span>
+        <button class="adj-btn" data-action="offset" data-idx="${i}" data-delta="-20">↓</button>
+        <input type="range" class="adj-range-offset" data-idx="${i}"
+          min="${offMin}" max="${offMax}" step="1" value="${offsetY}"
+          style="flex:1;accent-color:#7c3aed;height:4px;">
+        <button class="adj-btn" data-action="offset" data-idx="${i}" data-delta="20">↑</button>
+        <span class="adj-value" id="offVal_${i}" style="color:#7c3aed;">${offLabel}</span>
+      </div>
+
+      <!-- 초기화 -->
+      <div class="adj-reset-row">
+        <button class="adj-reset-btn" data-action="reset" data-idx="${i}">↺ 이 이미지 초기화</button>
+      </div>
+    </div>
+
+    <div class="result-card-footer">
+      <span>${state.category} / ${state.subCategory}</span>
+      <span>·</span>
+      <button class="dl-btn" data-idx="${i}" style="background:none;border:none;color:#4f6ef7;font-size:11px;cursor:pointer;font-family:inherit;padding:0;">⬇ 다운로드</button>
+    </div>
+  `;
+
+  // 이벤트는 카드 교체 후 새로 바인딩
+  bindCardEvents(i);
+}
+
+// 이미지+라벨만 업데이트 (DOM 전체 교체 없음 → 이벤트 유지)
+function reRenderImage(i) {
+  const r   = state.results[i];
+  const img = state.files[i].img;
+  r.canvas  = smartResize(
+    img, state.canvasW, state.canvasH,
+    state.bgColor,
+    r.baseScale != null ? r.baseScale * r.scaleAdj : null,
+    r.offsetY
+  );
+
+  // 이미지 src만 교체
+  const card = document.getElementById(`card_${i}`);
+  if (!card) return;
+  const imgEl = card.querySelector('.result-canvas-wrap img');
+  if (imgEl) imgEl.src = r.canvas.toDataURL(`image/${state.format}`, state.quality);
+
+  // 라벨 업데이트
+  const scaleLabel = r.scaleAdj === 1
+    ? '기본'
+    : (r.scaleAdj > 1 ? `+${Math.round((r.scaleAdj-1)*100)}%` : `${Math.round((r.scaleAdj-1)*100)}%`);
+  const offLabel = r.offsetY === 0 ? '기본'
+    : (r.offsetY > 0 ? `위 +${r.offsetY}px` : `아래 ${Math.abs(r.offsetY)}px`);
+
+  const sv = document.getElementById(`scaleVal_${i}`);
+  const ov = document.getElementById(`offVal_${i}`);
+  if (sv) sv.textContent = scaleLabel;
+  if (ov) ov.textContent = offLabel;
+
+  // 슬라이더 값 동기화
+  const sr = card.querySelector('.adj-range-scale');
+  const or = card.querySelector('.adj-range-offset');
+  if (sr) sr.value = r.scaleAdj;
+  if (or) or.value = r.offsetY;
+}
+
+// 카드 이벤트 바인딩 (innerHTML 교체 후 한 번만 호출)
+function bindCardEvents(i) {
+  const card = document.getElementById(`card_${i}`);
+  if (!card) return;
+
+  // 버튼들
+  card.querySelectorAll('[data-action]').forEach(el => {
+    el.addEventListener('click', () => {
+      const action = el.dataset.action;
+      const idx    = parseInt(el.dataset.idx);
+      const delta  = parseFloat(el.dataset.delta);
+      const r      = state.results[idx];
+      if (!r) return;
+
+      if (action === 'scale') {
+        r.scaleAdj = parseFloat(Math.max(0.5, Math.min(2.0, r.scaleAdj + delta)).toFixed(3));
+        reRenderImage(idx);
+      } else if (action === 'offset') {
+        r.offsetY = Math.max(-200, Math.min(200, r.offsetY + delta));
+        reRenderImage(idx);
+      } else if (action === 'reset') {
+        r.scaleAdj = 1;
+        r.offsetY  = 0;
+        reRenderImage(idx);
+      }
+    });
+  });
+
+  // 슬라이더 - change 이벤트 (드래그 완료 후 한 번만 발생)
+  const sr = card.querySelector('.adj-range-scale');
+  if (sr) {
+    sr.addEventListener('change', () => {
+      state.results[i].scaleAdj = parseFloat(sr.value);
+      reRenderImage(i);
+    });
+  }
+  const or = card.querySelector('.adj-range-offset');
+  if (or) {
+    or.addEventListener('change', () => {
+      state.results[i].offsetY = parseInt(or.value);
+      reRenderImage(i);
+    });
+  }
+
+  // 다운로드 버튼
+  const dl = card.querySelector('.dl-btn');
+  if (dl) dl.addEventListener('click', () => downloadSingle(i));
+}
+
+function adjScale(i, delta) {
+  const r = state.results[i];
+  r.scaleAdj = parseFloat(Math.max(0.5, Math.min(2.0, r.scaleAdj + delta)).toFixed(3));
+  reRenderImage(i);
+}
+function adjScaleDirect(i, val) {
+  state.results[i].scaleAdj = parseFloat(val);
+  reRenderImage(i);
+}
+function adjOffset(i, delta) {
+  const r = state.results[i];
+  r.offsetY = Math.max(-200, Math.min(200, r.offsetY + delta));
+  reRenderImage(i);
+}
+function adjOffsetDirect(i, val) {
+  state.results[i].offsetY = parseInt(val);
+  reRenderImage(i);
+}
+function adjReset(i) {
+  const r = state.results[i];
+  r.scaleAdj = 1;
+  r.offsetY  = 0;
+  reRenderImage(i);
+}
+
+// ── Download ──
+function downloadSingle(idx) {
+  const { canvas, filename } = state.results[idx];
+  const mime = `image/${state.format}`;
+  const url = canvas.toDataURL(mime, state.quality);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+}
+
+async function downloadAll() {
+  if (state.results.length === 0) return;
+  if (state.results.length === 1) { downloadSingle(0); return; }
+
+  // Multiple: download sequentially with small delay
+  for (let i = 0; i < state.results.length; i++) {
+    await new Promise(r => setTimeout(r, 150));
+    downloadSingle(i);
+  }
+}
+
+// ── Reset ──
+function resetAll() {
+  state.files.forEach(f => URL.revokeObjectURL(f.url));
+  state.files = [];
+  state.results = [];
+  renderFileList();
+  document.getElementById('resultArea').classList.remove('visible');
+  document.getElementById('uploadZone').classList.remove('has-content');
+  document.getElementById('resultScroll').innerHTML = `
+    <div class="empty-hint">
+      <div class="big">🖼</div>
+      이미지를 업로드하고 리사이징을 실행하면 결과가 표시됩니다
+    </div>`;
+  document.getElementById('btnRun').disabled = true;
+  document.getElementById('fileInput').value = '';
+}
+
+// ── Settings Panel ──
+const CAT_ICONS = { '가방': '👜', 'ACC': '🎀', '의류': '👕' };
+
+function openSettings() {
+  renderSettingsBody();
+  document.getElementById('settingsOverlay').classList.add('open');
+  document.getElementById('settingsPanel').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('open');
+  document.getElementById('settingsPanel').classList.remove('open');
+}
+
+// catConfig에서 읽어 SUB_CATS도 동기화 후 셀렉트 갱신
+function syncFromSettings() {
+  // 1. 패널 입력값 → catConfig 반영 (axis, refVal만; unit은 catConfig 고정)
+  Object.keys(catConfig).forEach(cat => {
+    Object.keys(catConfig[cat]).forEach(sub => {
+      const key = encodeKey(cat, sub);
+      const axisH = document.querySelector(`.axis-pill-btn[data-key="${key}"][data-axis="H"]`);
+      const refInput = document.getElementById(`ref_${key}`);
+      if (axisH && refInput) {
+        catConfig[cat][sub].axis = axisH.classList.contains('active') ? 'H' : 'W';
+        catConfig[cat][sub].refVal = parseFloat(refInput.value) || catConfig[cat][sub].refVal;
+      }
+    });
+  });
+
+  // 2. SUB_CATS를 catConfig 키 기준으로 재동기화
+  Object.keys(catConfig).forEach(cat => {
+    SUB_CATS[cat] = Object.keys(catConfig[cat]);
+  });
+
+  // 3. 현재 선택된 카테고리 셀렉트 갱신
+  populateSubCat(state.category);
+  applyDefaults();
+}
+
+function applyAndClose() {
+  syncFromSettings();
+  closeSettings();
+}
+
+// key에 특수문자 안전하게 처리
+function encodeKey(cat, sub) {
+  return `${cat}__${sub}`.replace(/[^a-zA-Z0-9가-힣_]/g, '_');
+}
+
+function renderSettingsBody() {
+  const body = document.getElementById('settingsBody');
+  body.innerHTML = '';
+
+  Object.keys(catConfig).forEach(cat => {
+    const group = document.createElement('div');
+    group.className = 'settings-cat-group';
+
+    // 헤더
+    group.innerHTML = `
+      <div class="settings-cat-title">
+        <span>${CAT_ICONS[cat] || '📦'}</span> ${cat}
+      </div>
+      <div class="subcat-row header-row">
+        <div>소분류</div>
+        <div>기준축</div>
+        <div>기준치</div>
+        <div></div>
+      </div>
+    `;
+
+    // 소분류 행들
+    const rowsContainer = document.createElement('div');
+    rowsContainer.id = `rows_${cat}`;
+    group.appendChild(rowsContainer);
+
+    Object.keys(catConfig[cat]).forEach(sub => {
+      rowsContainer.appendChild(buildSubcatRow(cat, sub, catConfig[cat][sub]));
+    });
+
+    // 추가 행
+    const addRow = document.createElement('div');
+    addRow.className = 'add-subcat-row';
+    addRow.innerHTML = `
+      <input type="text" class="add-subcat-input" id="newSubInput_${cat}"
+        placeholder="새 소분류 이름 입력..." maxlength="12"
+        onkeydown="if(event.key==='Enter') addSubcat('${cat}')">
+      <button class="btn-add-subcat" onclick="addSubcat('${cat}')">+ 추가</button>
+    `;
+    group.appendChild(addRow);
+    body.appendChild(group);
+  });
+}
+
+function buildSubcatRow(cat, sub, cfg) {
+  const key = encodeKey(cat, sub);
+  const unit = cfg.unit || 'cm';
+  const isInch = unit === 'in';
+  const row = document.createElement('div');
+  row.className = 'subcat-row';
+  row.id = `subrow_${key}`;
+  row.innerHTML = `
+    <div class="subcat-name">${sub}</div>
+    <div>
+      <div class="axis-pill">
+        <button class="axis-pill-btn ${cfg.axis === 'H' ? 'active' : ''}"
+          data-key="${key}" data-axis="H" onclick="toggleAxisPill(this)">세로</button>
+        <button class="axis-pill-btn ${cfg.axis === 'W' ? 'active' : ''}"
+          data-key="${key}" data-axis="W" onclick="toggleAxisPill(this)">가로</button>
+      </div>
+    </div>
+    <div class="ref-input-wrap">
+      <input type="number" class="ref-input" id="ref_${key}"
+        value="${cfg.refVal}" min="0.1" max="9999" step="0.1">
+      <span class="unit-badge ${isInch ? 'is-inch' : ''}">${unit}</span>
+    </div>
+    <button class="btn-del-subcat" onclick="deleteSubcat('${cat}','${sub}')" title="삭제">✕</button>
+  `;
+  return row;
+}
+
+function addSubcat(cat) {
+  const input = document.getElementById(`newSubInput_${cat}`);
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (catConfig[cat][name]) { alert('이미 존재하는 소분류입니다.'); return; }
+
+  // 러기지는 inch, 나머지 cm 자동 지정
+  const unit = name === '러기지' ? 'in' : 'cm';
+  catConfig[cat][name] = { axis: 'H', refVal: 50, unit };
+
+  const rowsContainer = document.getElementById(`rows_${cat}`);
+  rowsContainer.appendChild(buildSubcatRow(cat, name, catConfig[cat][name]));
+
+  input.value = '';
+  input.focus();
+}
+
+function deleteSubcat(cat, sub) {
+  if (Object.keys(catConfig[cat]).length <= 1) {
+    alert('최소 1개의 소분류는 있어야 합니다.');
+    return;
+  }
+  if (!confirm(`"${sub}" 소분류를 삭제할까요?`)) return;
+  delete catConfig[cat][sub];
+  const key = encodeKey(cat, sub);
+  const row = document.getElementById(`subrow_${key}`);
+  if (row) row.remove();
+}
+
+function toggleAxisPill(btn) {
+  const key = btn.dataset.key;
+  document.querySelectorAll(`.axis-pill-btn[data-key="${key}"]`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+
+function resetToDefaults() {
+  if (!confirm('기본값으로 초기화할까요?')) return;
+  catConfig = JSON.parse(JSON.stringify(DEFAULT_CAT_CONFIG));
+  renderSettingsBody();
+}
+
+function exportJSON() {
+  const json = JSON.stringify(catConfig, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'thumbnail-cat-config.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      catConfig = parsed;
+      renderSettingsBody();
+      alert('설정을 불러왔습니다.');
+    } catch {
+      alert('올바른 JSON 파일이 아닙니다.');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ── Start ──
+init();
+</script>
+</body>
+</html>
