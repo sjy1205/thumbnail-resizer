@@ -1535,9 +1535,35 @@ function updateUnitLabels() {
   document.getElementById('sizeD').placeholder = isIn ? '예) 14' : '예) 14';
 }
 
+// ── localStorage 저장/불러오기 ──
+const STORAGE_KEY = 'thumbnailResizerCatConfig';
+
+function saveConfig() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(catConfig));
+  } catch(e) { console.warn('설정 저장 실패:', e); }
+}
+
+function loadConfig() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // 저장된 키가 유효한지 확인 후 적용
+      if (parsed && typeof parsed === 'object') {
+        catConfig = parsed;
+        // SUB_CATS도 동기화
+        Object.keys(catConfig).forEach(cat => {
+          SUB_CATS[cat] = Object.keys(catConfig[cat]);
+        });
+      }
+    }
+  } catch(e) { console.warn('설정 불러오기 실패:', e); }
+}
+
 // ── Init ──
 function init() {
-  // 초기 소분류 셀렉트 채우기
+  loadConfig();               // ← 저장된 설정 먼저 불러오기
   populateSubCat('가방');
   setupDragDrop();
   updateUnitLabels();
@@ -2074,6 +2100,7 @@ function syncFromSettings() {
 
 function applyAndClose() {
   syncFromSettings();
+  saveConfig();   // ← localStorage에 저장
   closeSettings();
 }
 
@@ -2192,6 +2219,7 @@ function toggleAxisPill(btn) {
 function resetToDefaults() {
   if (!confirm('기본값으로 초기화할까요?')) return;
   catConfig = JSON.parse(JSON.stringify(DEFAULT_CAT_CONFIG));
+  saveConfig();   // ← 초기화된 값도 저장
   renderSettingsBody();
 }
 
@@ -2214,6 +2242,7 @@ function importJSON(input) {
     try {
       const parsed = JSON.parse(e.target.result);
       catConfig = parsed;
+      saveConfig();
       renderSettingsBody();
       alert('설정을 불러왔습니다.');
     } catch {
